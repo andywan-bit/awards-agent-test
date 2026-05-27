@@ -4,10 +4,12 @@
 
 import json
 import os
+import threading
 from flask import Flask, render_template_string, jsonify
 
 app = Flask(__name__)
 OPS_LOG_FILE = "/tmp/ops_log.json"
+AGENT_THREAD = None
 
 HTML = """
 <!DOCTYPE html>
@@ -218,18 +220,25 @@ def api_ops():
     except:
         return jsonify({"status":"waiting","steps":[],"edges":[],"winners_found":[],"alerts_sent":0,"total_runs":0})
 
+
+def start_agent_thread():
+    global AGENT_THREAD
+    if os.environ.get("START_AGENT", "true").lower() not in {"1", "true", "yes"}:
+        print("Agent background thread disabled by START_AGENT")
+        return
+    if AGENT_THREAD and AGENT_THREAD.is_alive():
+        return
+
+    from agent import run_watch
+
+    AGENT_THREAD = threading.Thread(target=run_watch, daemon=True)
+    AGENT_THREAD.start()
+
+
+start_agent_thread()
+
+
 if __name__ == "__main__":
-    import threading
-    import subprocess
-    
-    # Start agent in background thread
-    def run_agent():
-        subprocess.run(["python", "agent.py", "--watch"])
-    
-    t = threading.Thread(target=run_agent, daemon=True)
-    t.start()
-    
-    # Start web server on Railway's PORT
     port = int(os.environ.get("PORT", 8080))
     print(f"Starting ops dashboard on port {port}")
     app.run(debug=False, host="0.0.0.0", port=port, threaded=True)
