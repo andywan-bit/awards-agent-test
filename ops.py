@@ -10,6 +10,7 @@ from flask import Flask, render_template_string, jsonify
 app = Flask(__name__)
 OPS_LOG_FILE = "/tmp/ops_log.json"
 AGENT_THREAD = None
+AGENT_TIMER = None
 
 HTML = """
 <!DOCTYPE html>
@@ -235,7 +236,19 @@ def start_agent_thread():
     AGENT_THREAD.start()
 
 
-start_agent_thread()
+def schedule_agent_thread():
+    global AGENT_TIMER
+    delay_seconds = float(os.environ.get("AGENT_START_DELAY_SECONDS", "20"))
+    if AGENT_TIMER:
+        return
+
+    AGENT_TIMER = threading.Timer(delay_seconds, start_agent_thread)
+    AGENT_TIMER.daemon = True
+    AGENT_TIMER.start()
+    print(f"Agent background thread scheduled in {delay_seconds:g}s")
+
+
+schedule_agent_thread()
 
 
 if __name__ == "__main__":
