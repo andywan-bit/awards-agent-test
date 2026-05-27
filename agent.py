@@ -19,18 +19,26 @@ STATE_FILE   = "/tmp/agent_state.json"
 OPS_LOG_FILE = "/tmp/ops_log.json"
 
 PRECURSOR_DATA = {
-    "The Brutalist":               {"show":"Oscars",       "category":"Best Picture",          "sag_win":False,"bafta_win":True, "critics_choice":True, "guild_noms":3,"rt_score":89,"social_volume":0.72},
-    "Adrien Brody":                {"show":"Oscars",       "category":"Best Actor",             "sag_win":True, "bafta_win":True, "critics_choice":True, "guild_noms":0,"rt_score":None,"social_volume":0.65},
-    "Brady Corbet":                {"show":"Oscars",       "category":"Best Director",          "sag_win":None, "bafta_win":False,"critics_choice":False,"guild_noms":2,"rt_score":89,"social_volume":0.55},
-    "Demi Moore":                  {"show":"Oscars",       "category":"Best Actress",           "sag_win":True, "bafta_win":False,"critics_choice":True, "guild_noms":0,"rt_score":None,"social_volume":0.48},
-    "Emilia Pérez":                {"show":"Oscars",       "category":"Best Intl. Film",        "sag_win":None, "bafta_win":True, "critics_choice":True, "guild_noms":1,"rt_score":79,"social_volume":0.60},
-    "The Day of the Jackal":       {"show":"Emmys",        "category":"Best Drama Series",      "sag_win":False,"bafta_win":None, "critics_choice":False,"guild_noms":2,"rt_score":93,"social_volume":0.58},
-    "The Bear":                    {"show":"Emmys",        "category":"Best Comedy Series",     "sag_win":True, "bafta_win":None, "critics_choice":True, "guild_noms":3,"rt_score":98,"social_volume":0.80},
-    "Disclaimer":                  {"show":"Emmys",        "category":"Best Limited Series",    "sag_win":False,"bafta_win":None, "critics_choice":False,"guild_noms":2,"rt_score":94,"social_volume":0.52},
-    "Beyoncé – Cowboy Carter":     {"show":"Grammys",      "category":"Album of the Year",      "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":0,"rt_score":None,"social_volume":0.88,"metascore":90},
-    "Kendrick Lamar – Not Like Us":{"show":"Grammys",      "category":"Record of the Year",     "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":0,"rt_score":None,"social_volume":0.95},
-    "Conclave":                    {"show":"Golden Globes","category":"Best Picture – Drama",   "sag_win":False,"bafta_win":False,"critics_choice":True, "guild_noms":2,"rt_score":92,"social_volume":0.62},
-    "Shōgun":                      {"show":"Golden Globes","category":"Best TV Series – Drama", "sag_win":True, "bafta_win":None, "critics_choice":True, "guild_noms":3,"rt_score":99,"social_volume":0.75},
+    # Future awards markets should start conservative. These are current live
+    # Kalshi candidates, but precursor signals stay unknown until real results
+    # are parsed from news or updated manually.
+    "The Odyssey":                 {"show":"Oscars", "category":"Best Picture", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Dune: Part Three":            {"show":"Oscars", "category":"Best Picture", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Project Hail Mary":           {"show":"Oscars", "category":"Best Picture", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Tom Cruise":                  {"show":"Oscars", "category":"Best Actor", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "John Malkovich":              {"show":"Oscars", "category":"Best Actor", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Renate Reinsve":              {"show":"Oscars", "category":"Best Actress", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Sandra Hüller":               {"show":"Oscars", "category":"Best Actress", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Christopher Nolan":           {"show":"Oscars", "category":"Best Director", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+
+    "The Pitt":                    {"show":"Emmys", "category":"Best Drama Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Pluribus":                    {"show":"Emmys", "category":"Best Drama Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Hacks":                       {"show":"Emmys", "category":"Best Comedy Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Margo's Got Money Troubles":  {"show":"Emmys", "category":"Best Comedy Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Shrinking":                   {"show":"Emmys", "category":"Best Comedy Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "The Bear":                    {"show":"Emmys", "category":"Best Comedy Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Love Story":                  {"show":"Emmys", "category":"Best Limited Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
+    "Beef":                        {"show":"Emmys", "category":"Best Limited Series", "sag_win":None, "bafta_win":None, "critics_choice":None, "guild_noms":None, "rt_score":None, "social_volume":None},
 }
 
 
