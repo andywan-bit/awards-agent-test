@@ -9,6 +9,7 @@ import requests
 
 from config import (
     KALSHI_API_KEY,
+    KALSHI_AUTH_PUBLIC_READS,
     KALSHI_BASE_URL,
     KALSHI_KEY_ID,
     KALSHI_SEARCH_TERMS,
@@ -66,11 +67,12 @@ def _auth_headers(method: str, url: str) -> dict:
     }
 
 
-def _request(method: str, endpoint: str, **kwargs) -> dict:
+def _request(method: str, endpoint: str, auth: bool = False, **kwargs) -> dict:
     endpoint = "/" + endpoint.lstrip("/")
     url = KALSHI_BASE_URL + endpoint
     headers = kwargs.pop("headers", {})
-    headers.update(_auth_headers(method, url))
+    if auth:
+        headers.update(_auth_headers(method, url))
 
     for attempt in range(3):
         resp = requests.request(method, url, headers=headers, timeout=10, **kwargs)
@@ -129,6 +131,7 @@ def fetch_entertainment_series() -> list[dict]:
     data = _request(
         "GET",
         "/series",
+        auth=KALSHI_AUTH_PUBLIC_READS,
         params={"category": "Entertainment", "include_volume": "true"},
     )
     return data.get("series") or []
@@ -145,7 +148,7 @@ def fetch_open_markets() -> list[dict]:
         if cursor:
             params["cursor"] = cursor
 
-        data = _request("GET", "/markets", params=params)
+        data = _request("GET", "/markets", auth=KALSHI_AUTH_PUBLIC_READS, params=params)
         markets.extend(data.get("markets", []))
         cursor = data.get("cursor")
         if not cursor:
@@ -159,6 +162,7 @@ def fetch_markets_for_series(series_ticker: str) -> list[dict]:
     data = _request(
         "GET",
         "/markets",
+        auth=KALSHI_AUTH_PUBLIC_READS,
         params={
             "series_ticker": series_ticker,
             "status": "open",

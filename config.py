@@ -29,6 +29,11 @@ KALSHI_USE_DEMO_DATA = os.environ.get("KALSHI_USE_DEMO_DATA", "").lower() in {
     "true",
     "yes",
 }
+KALSHI_AUTH_PUBLIC_READS = os.environ.get("KALSHI_AUTH_PUBLIC_READS", "").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 KALSHI_SEARCH_TERMS = {
     "Oscars": "oscar",
     "Emmys": "emmy",

@@ -7,7 +7,7 @@ import re
 import json
 import base64
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from config import GITHUB_TOKEN, GITHUB_REPO, GITHUB_FILE_PATH
 
 GITHUB_API = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
@@ -15,6 +15,10 @@ HEADERS = {
     "Authorization": f"token {GITHUB_TOKEN}",
     "Accept":        "application/vnd.github.v3+json",
 }
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 def fetch_current_file() -> tuple[str, str]:
@@ -116,7 +120,7 @@ def push_update_to_github(content: str, sha: str, winners: list[dict]) -> bool:
         return False
 
     names = ", ".join(w["nominee"] for w in winners)
-    commit_message = f"Agent update: {names} — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC"
+    commit_message = f"Agent update: {names} — {utc_now().strftime('%Y-%m-%d %H:%M')} UTC"
 
     try:
         encoded = base64.b64encode(content.encode("utf-8")).decode("utf-8")

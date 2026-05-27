@@ -6,7 +6,7 @@ import sys
 import time
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from news_scout    import fetch_all_shows
 from ai_parser     import parse_all_shows
@@ -34,6 +34,10 @@ PRECURSOR_DATA = {
 }
 
 
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
 def load_state():
     try:
         with open(STATE_FILE) as f: return json.load(f)
@@ -47,8 +51,9 @@ def save_ops_log(log):
 
 
 def run_cycle(state):
-    now     = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-    started = datetime.utcnow().isoformat()
+    cycle_start = utc_now()
+    now     = cycle_start.strftime("%Y-%m-%d %H:%M UTC")
+    started = cycle_start.isoformat()
     ops     = {"cycle_started":started,"cycle_time":now,"steps":[],"edges":[],"winners_found":[],"alerts_sent":0,"status":"running"}
     save_ops_log(ops)
 
@@ -56,7 +61,7 @@ def run_cycle(state):
 
     # Step 1: news
     print("\n[1/4] Scouting for awards news...")
-    ops["steps"].append({"step":1,"name":"News scout","status":"running","started":datetime.utcnow().isoformat()})
+    ops["steps"].append({"step":1,"name":"News scout","status":"running","started":utc_now().isoformat()})
     save_ops_log(ops)
     news = fetch_all_shows()
     article_count = sum(len(v) for v in news.values())
@@ -66,7 +71,7 @@ def run_cycle(state):
 
     # Step 2: parse
     print("\n[2/4] Parsing with Claude AI...")
-    ops["steps"].append({"step":2,"name":"AI parser","status":"running","started":datetime.utcnow().isoformat()})
+    ops["steps"].append({"step":2,"name":"AI parser","status":"running","started":utc_now().isoformat()})
     save_ops_log(ops)
     winners = parse_all_shows(news)
     ops["steps"][-1].update({"status":"done","winners_extracted":len(winners)})
@@ -76,7 +81,7 @@ def run_cycle(state):
 
     # Step 3: update
     print("\n[3/4] Updating GitHub data...")
-    ops["steps"].append({"step":3,"name":"Data updater","status":"running","started":datetime.utcnow().isoformat()})
+    ops["steps"].append({"step":3,"name":"Data updater","status":"running","started":utc_now().isoformat()})
     save_ops_log(ops)
     updated = False
     if winners:
@@ -87,7 +92,7 @@ def run_cycle(state):
 
     # Step 4: edges
     print("\n[4/4] Scanning Kalshi edges...")
-    ops["steps"].append({"step":4,"name":"Edge scanner","status":"running","started":datetime.utcnow().isoformat()})
+    ops["steps"].append({"step":4,"name":"Edge scanner","status":"running","started":utc_now().isoformat()})
     save_ops_log(ops)
     edges = find_edges(PRECURSOR_DATA)
     ops["steps"][-1].update({"status":"done","edges_found":len(edges)})
@@ -105,7 +110,7 @@ def run_cycle(state):
     state["last_run"]       = now
     state["runs_completed"] = state.get("runs_completed",0) + 1
     ops["status"]           = "complete"
-    ops["cycle_ended"]      = datetime.utcnow().isoformat()
+    ops["cycle_ended"]      = utc_now().isoformat()
     ops["total_runs"]       = state["runs_completed"]
     save_ops_log(ops)
     print(f"\n  Cycle complete. Total runs: {state['runs_completed']}\n")

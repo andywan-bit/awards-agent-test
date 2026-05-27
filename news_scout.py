@@ -3,7 +3,7 @@
 # ============================================================
 
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from config import NEWS_API_KEY
 
 BASE_URL = "https://newsapi.org/v2/everything"
@@ -19,6 +19,10 @@ SEARCH_QUERIES = {
 }
 
 
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
 def fetch_recent_news(show: str, hours_back: int = 25) -> list[dict]:
     """
     Fetch recent news articles related to an awards show.
@@ -29,7 +33,7 @@ def fetch_recent_news(show: str, hours_back: int = 25) -> list[dict]:
 
     queries = SEARCH_QUERIES.get(show, [show])
     articles = []
-    since = (datetime.utcnow() - timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    since = (utc_now() - timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     for query in queries:
         try:
@@ -72,16 +76,16 @@ def _demo_articles(show: str) -> list[dict]:
     """Demo articles for testing without a NewsAPI key."""
     demos = {
         "Oscars": [
-            {"title": "Oscars 2027: Complete list of winners", "description": "Adrien Brody wins Best Actor for The Brutalist. The Brutalist wins Best Picture. Demi Moore wins Best Actress for The Substance.", "url": "https://example.com/oscars", "publishedAt": datetime.utcnow().isoformat()},
+            {"title": "Oscars 2027: Complete list of winners", "description": "Adrien Brody wins Best Actor for The Brutalist. The Brutalist wins Best Picture. Demi Moore wins Best Actress for The Substance.", "url": "https://example.com/oscars", "publishedAt": utc_now().isoformat()},
         ],
         "Emmys": [
-            {"title": "Emmy Awards 2026 Winners", "description": "The Bear wins Best Comedy Series. Shōgun wins Best Drama Series. Disclaimer wins Best Limited Series.", "url": "https://example.com/emmys", "publishedAt": datetime.utcnow().isoformat()},
+            {"title": "Emmy Awards 2026 Winners", "description": "The Bear wins Best Comedy Series. Shōgun wins Best Drama Series. Disclaimer wins Best Limited Series.", "url": "https://example.com/emmys", "publishedAt": utc_now().isoformat()},
         ],
         "Grammys": [
-            {"title": "Grammy winners 2027", "description": "Beyoncé wins Album of the Year for Cowboy Carter. Kendrick Lamar wins Record of the Year for Not Like Us.", "url": "https://example.com/grammys", "publishedAt": datetime.utcnow().isoformat()},
+            {"title": "Grammy winners 2027", "description": "Beyoncé wins Album of the Year for Cowboy Carter. Kendrick Lamar wins Record of the Year for Not Like Us.", "url": "https://example.com/grammys", "publishedAt": utc_now().isoformat()},
         ],
         "Golden Globes": [
-            {"title": "Golden Globes 2027 results", "description": "Conclave wins Best Picture Drama. Shōgun wins Best TV Series Drama.", "url": "https://example.com/globes", "publishedAt": datetime.utcnow().isoformat()},
+            {"title": "Golden Globes 2027 results", "description": "Conclave wins Best Picture Drama. Shōgun wins Best TV Series Drama.", "url": "https://example.com/globes", "publishedAt": utc_now().isoformat()},
         ],
     }
     return demos.get(show, [])

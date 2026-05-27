@@ -206,6 +206,10 @@ setInterval(refresh, 30000);
 def index():
     return render_template_string(HTML)
 
+@app.route("/healthz")
+def healthz():
+    return jsonify({"ok": True})
+
 @app.route("/api/ops")
 def api_ops():
     try:
@@ -228,4 +232,4 @@ if __name__ == "__main__":
     # Start web server on Railway's PORT
     port = int(os.environ.get("PORT", 8080))
     print(f"Starting ops dashboard on port {port}")
-    app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=False, host="0.0.0.0", port=port, threaded=True)

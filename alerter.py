@@ -7,13 +7,17 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
+from datetime import datetime, timezone
 
 SENT_LOG = "/tmp/sent_alerts.json"
 
 GMAIL_USER     = os.environ.get("GMAIL_USER")
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 ALERT_TO_EMAIL = os.environ.get("ALERT_TO_EMAIL", GMAIL_USER)
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 def load_sent_alerts():
@@ -23,7 +27,7 @@ def load_sent_alerts():
 
 def save_sent_alert(nominee, edge):
     log = load_sent_alerts()
-    log[nominee] = {"edge": edge, "sent_at": datetime.utcnow().isoformat()}
+    log[nominee] = {"edge": edge, "sent_at": utc_now().isoformat()}
     with open(SENT_LOG, "w") as f: json.dump(log, f, indent=2)
 
 def already_alerted(nominee, current_edge):
