@@ -14,6 +14,12 @@ SENT_LOG = "/tmp/sent_alerts.json"
 GMAIL_USER     = os.environ.get("GMAIL_USER")
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 ALERT_TO_EMAIL = os.environ.get("ALERT_TO_EMAIL", GMAIL_USER)
+ALERTS_ENABLED = os.environ.get("ALERTS_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+SMTP_TIMEOUT_SECONDS = int(os.environ.get("SMTP_TIMEOUT_SECONDS", "10"))
 
 
 def utc_now():
@@ -52,6 +58,11 @@ def format_email(edges):
     return subject, body
 
 def send_email(subject, body):
+    if not ALERTS_ENABLED:
+        print("  [Email] Alerts disabled — printing alert:")
+        print("  " + body.replace("\n", "\n  "))
+        return False
+
     if not GMAIL_USER or not GMAIL_PASSWORD:
         print("  [Email] Gmail not configured — printing alert:")
         print("  " + body.replace("\n", "\n  "))
@@ -62,7 +73,7 @@ def send_email(subject, body):
         msg["To"]      = ALERT_TO_EMAIL
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=SMTP_TIMEOUT_SECONDS) as server:
             server.login(GMAIL_USER, GMAIL_PASSWORD)
             server.sendmail(GMAIL_USER, ALERT_TO_EMAIL, msg.as_string())
         print(f"  ✓ Email sent to {ALERT_TO_EMAIL}")
@@ -79,6 +90,6 @@ def alert_on_edges(edges):
     print(f"  Sending email alert for {len(new_edges)} new edge(s)...")
     subject, body = format_email(new_edges)
     success = send_email(subject, body)
-    if success:
+    if success or not ALERTS_ENABLED:
         for e in new_edges:
             save_sent_alert(e["nominee"], e["edge"])
