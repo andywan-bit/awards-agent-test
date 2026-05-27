@@ -224,7 +224,7 @@ def api_ops():
 
 def start_agent_thread():
     global AGENT_THREAD
-    if os.environ.get("START_AGENT", "true").lower() not in {"1", "true", "yes"}:
+    if os.environ.get("START_AGENT", "false").lower() not in {"1", "true", "yes"}:
         print("Agent background thread disabled by START_AGENT")
         return
     if AGENT_THREAD and AGENT_THREAD.is_alive():
@@ -248,6 +248,7 @@ def schedule_agent_thread():
     print(f"Agent background thread scheduled in {delay_seconds:g}s")
 
 
+print(f"Ops dashboard configured for PORT={os.environ.get('PORT', '8080')}")
 schedule_agent_thread()
 
 
