@@ -2,7 +2,7 @@
 #  edge_detector.py — runs the model and finds Kalshi edges
 # ============================================================
 
-from config import EDGE_ALERT_THRESHOLD, MIN_CONFIDENCE, KALSHI_USE_DEMO_DATA
+from kalshi_client import fetch_kalshi_price as fetch_live_kalshi_price, DEMO_KALSHI
 from kalshi_client import fetch_kalshi_price as fetch_live_kalshi_price
 
 # ── Inline model (same logic as opportunities.py) ────────────
