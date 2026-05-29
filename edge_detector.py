@@ -5,7 +5,6 @@
 from config import EDGE_ALERT_THRESHOLD, MIN_CONFIDENCE, KALSHI_USE_DEMO_DATA
 from kalshi_client import fetch_kalshi_price as fetch_live_kalshi_price, DEMO_KALSHI
 
-# ── Inline model (same logic as opportunities.py) ────────────
 SIGNAL_WEIGHTS = {
     "critics_choice": 0.413,
     "sag_win":        0.285,
@@ -15,21 +14,6 @@ SIGNAL_WEIGHTS = {
     "rt_score":       0.034,
 }
 SHOW_CONFIDENCE = {"Oscars": 1.0, "Emmys": 0.9, "Golden Globes": 0.85, "Grammys": 0.70}
-
-DEMO_KALSHI = {
-    "The Brutalist":               44,
-    "Adrien Brody":                58,
-    "Brady Corbet":                51,
-    "Demi Moore":                  52,
-    "Emilia Pérez":                49,
-    "The Day of the Jackal":       28,
-    "The Bear":                    61,
-    "Disclaimer":                  31,
-    "Beyoncé – Cowboy Carter":     47,
-    "Kendrick Lamar – Not Like Us":41,
-    "Conclave":                    35,
-    "Shōgun":                      68,
-}
 
 
 def bool_to_signal(v):
@@ -81,7 +65,6 @@ def calculate_probability(signals: dict) -> dict:
 
 
 def fetch_kalshi_price(nominee: str, show: str | None = None, category: str | None = None) -> int | None:
-    """Fetch a live Kalshi price, using demo data only when explicitly enabled."""
     price = fetch_live_kalshi_price(nominee, show=show, category=category)
     if price is None and KALSHI_USE_DEMO_DATA:
         return DEMO_KALSHI.get(nominee)
@@ -89,20 +72,19 @@ def fetch_kalshi_price(nominee: str, show: str | None = None, category: str | No
 
 
 def find_edges(precursor_data: dict) -> list[dict]:
-    """
-    Run the model on all nominees and return edges above threshold.
-    """
     conf_order = {"high": 3, "medium": 2, "low": 1}
     min_conf   = conf_order.get(MIN_CONFIDENCE, 2)
+    print(f"  [DEBUG] threshold={EDGE_ALERT_THRESHOLD}, min_conf={MIN_CONFIDENCE}, demo={KALSHI_USE_DEMO_DATA}")
 
     edges = []
     for nominee, signals in precursor_data.items():
-        result       = calculate_probability(signals)
-        model_prob   = result["probability"]
-        confidence   = result["confidence"]
-        signals_used = result["signals_used"]
+        result = calculate_probability(signals)
+        model_prob = result["probability"]
+        confidence = result["confidence"]
+        print(f"  [DEBUG] {nominee}: model={model_prob}%, conf={confidence}, signals={result['signals_used']}")
 
         if conf_order.get(confidence, 0) < min_conf:
+            print(f"    skipped: confidence too low")
             continue
 
         kalshi_price = fetch_kalshi_price(
@@ -110,10 +92,14 @@ def find_edges(precursor_data: dict) -> list[dict]:
             show=signals.get("show"),
             category=signals.get("category"),
         )
+        print(f"    kalshi_price={kalshi_price}")
+
         if kalshi_price is None:
+            print(f"    skipped: no kalshi price")
             continue
 
         edge = round(model_prob - kalshi_price, 1)
+        print(f"    edge={edge}")
 
         if edge >= EDGE_ALERT_THRESHOLD:
             edges.append({
@@ -125,6 +111,8 @@ def find_edges(precursor_data: dict) -> list[dict]:
                 "edge":        edge,
                 "confidence":  confidence,
             })
+        else:
+            print(f"    skipped: edge below threshold")
 
     edges.sort(key=lambda x: -x["edge"])
     return edges
