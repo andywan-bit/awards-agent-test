@@ -2,7 +2,6 @@ import base64
 import datetime
 import os
 import time
-from functools import lru_cache
 from urllib.parse import urlparse
 
 import requests
@@ -16,6 +15,21 @@ from config import (
     KALSHI_SERIES_BY_SHOW_CATEGORY,
     KALSHI_USE_DEMO_DATA,
 )
+
+DEMO_KALSHI = {
+    "The Brutalist":               44,
+    "Adrien Brody":                58,
+    "Brady Corbet":                51,
+    "Demi Moore":                  52,
+    "Emilia Pérez":                49,
+    "The Day of the Jackal":       28,
+    "The Bear":                    61,
+    "Disclaimer":                  31,
+    "Beyoncé – Cowboy Carter":     47,
+    "Kendrick Lamar – Not Like Us":41,
+    "Conclave":                    35,
+    "Shōgun":                      68,
+}
 
 
 def _load_private_key(pem_or_path: str):
@@ -55,7 +69,6 @@ def _sign_request(private_key, timestamp_ms: str, method: str, path: str) -> str
 def _auth_headers(method: str, url: str) -> dict:
     if not KALSHI_API_KEY or not KALSHI_KEY_ID:
         return {}
-
     timestamp_ms = str(int(datetime.datetime.now().timestamp() * 1000))
     path = urlparse(url).path
     private_key = _load_private_key(KALSHI_API_KEY)
@@ -79,28 +92,21 @@ def _request(method: str, endpoint: str, auth: bool = False, **kwargs) -> dict:
         if resp.status_code != 429 or attempt == 2:
             resp.raise_for_status()
             return resp.json()
-
         retry_after = resp.headers.get("Retry-After")
         delay = float(retry_after) if retry_after else 1.5 * (attempt + 1)
         time.sleep(delay)
-
     return {}
 
 
 def _market_price(market: dict) -> int | None:
-    if market.get("kalshi_prob") is not None:
-        return int(round(market["kalshi_prob"]))
-
     for field in ("yes_ask", "yes_bid", "last_price"):
         price = market.get(field)
         if price is not None:
             return int(round(price))
-
     for field in ("yes_ask_dollars", "yes_bid_dollars", "last_price_dollars"):
         price = market.get(field)
         if price is not None:
             return int(round(float(price) * 100))
-
     return None
 
 
@@ -116,94 +122,46 @@ def _market_text(market: dict) -> str:
     return " ".join(str(p).lower() for p in parts if p)
 
 
-def _series_text(series: dict) -> str:
-    parts = [
-        series.get("ticker", ""),
-        series.get("title", ""),
-        series.get("category", ""),
-        " ".join(series.get("tags") or []),
-    ]
-    return " ".join(str(p).lower() for p in parts if p)
-
-
-@lru_cache(maxsize=1)
-def fetch_entertainment_series() -> list[dict]:
-    data = _request(
-        "GET",
-        "/series",
-        auth=KALSHI_AUTH_PUBLIC_READS,
-        params={"category": "Entertainment", "include_volume": "true"},
-    )
-    return data.get("series") or []
-
-
-@lru_cache(maxsize=1)
-def fetch_open_markets() -> list[dict]:
-    markets = []
-    cursor = None
-    max_pages = int(os.environ.get("KALSHI_MARKET_SCAN_PAGES", "5"))
-
-    for _ in range(max_pages):
-        params = {"status": "open", "limit": 1000}
-        if cursor:
-            params["cursor"] = cursor
-
-        data = _request("GET", "/markets", auth=KALSHI_AUTH_PUBLIC_READS, params=params)
-        markets.extend(data.get("markets", []))
-        cursor = data.get("cursor")
-        if not cursor:
-            break
-
-    return markets
-
-
-@lru_cache(maxsize=256)
 def fetch_markets_for_series(series_ticker: str) -> list[dict]:
     data = _request(
         "GET",
         "/markets",
         auth=KALSHI_AUTH_PUBLIC_READS,
-        params={
-            "series_ticker": series_ticker,
-            "status": "open",
-            "limit": 1000,
-        },
+        params={"series_ticker": series_ticker, "status": "open", "limit": 1000},
     )
     return data.get("markets") or []
 
 
-@lru_cache(maxsize=16)
+def fetch_open_markets() -> list[dict]:
+    markets = []
+    cursor = None
+    max_pages = int(os.environ.get("KALSHI_MARKET_SCAN_PAGES", "5"))
+    for _ in range(max_pages):
+        params = {"status": "open", "limit": 1000}
+        if cursor:
+            params["cursor"] = cursor
+        data = _request("GET", "/markets", auth=KALSHI_AUTH_PUBLIC_READS, params=params)
+        markets.extend(data.get("markets", []))
+        cursor = data.get("cursor")
+        if not cursor:
+            break
+    return markets
+
+
 def fetch_markets_for_show(show: str) -> list[dict]:
     search_term = KALSHI_SEARCH_TERMS.get(show, show).lower()
     results = []
-    scan_series = os.environ.get("KALSHI_SCAN_AWARD_SERIES", "").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
-    max_series = int(os.environ.get("KALSHI_AWARD_SERIES_SCAN_LIMIT", "25"))
-
     try:
         series_tickers = sorted({
             ticker
             for (mapped_show, _), ticker in KALSHI_SERIES_BY_SHOW_CATEGORY.items()
             if mapped_show == show
         })
-
-        if scan_series:
-            discovered = [
-                s.get("ticker", "")
-                for s in fetch_entertainment_series()
-                if search_term in _series_text(s)
-            ][:max_series]
-            series_tickers.extend(t for t in discovered if t and t not in series_tickers)
-
         for series_ticker in series_tickers:
             for market in fetch_markets_for_series(series_ticker):
                 price = _market_price(market)
                 if price is None:
                     continue
-
                 market = dict(market)
                 market["id"] = market.get("ticker", "")
                 market["kalshi_prob"] = price
@@ -230,13 +188,10 @@ def fetch_markets_for_show(show: str) -> list[dict]:
 
 def fetch_kalshi_price(nominee: str, show: str | None = None, category: str | None = None) -> int | None:
     if KALSHI_USE_DEMO_DATA:
-        from edge_detector import DEMO_KALSHI
         return DEMO_KALSHI.get(nominee)
 
     try:
         nominee_key = nominee.lower().split("–", 1)[0].strip()
-        show_key = KALSHI_SEARCH_TERMS.get(show, show or "").lower()
-        category_key = (category or "").lower()
         series_ticker = KALSHI_SERIES_BY_SHOW_CATEGORY.get((show, category))
 
         best_match = None
@@ -249,17 +204,18 @@ def fetch_kalshi_price(nominee: str, show: str | None = None, category: str | No
         else:
             markets = fetch_open_markets()
 
+        show_key = KALSHI_SEARCH_TERMS.get(show, show or "").lower()
+        category_key = (category or "").lower()
+
         for market in markets:
             text = _market_text(market)
             if nominee_key not in text:
                 continue
-
             score = 10
             if show_key and show_key in text:
                 score += 5
             if category_key and any(word in text for word in category_key.split()):
                 score += 2
-
             if score > best_score:
                 best_match = market
                 best_score = score
@@ -274,8 +230,7 @@ def fetch_kalshi_price(nominee: str, show: str | None = None, category: str | No
 
 def fetch_all_award_markets() -> list[dict]:
     if KALSHI_USE_DEMO_DATA:
-        print("  KALSHI_USE_DEMO_DATA enabled - using demo data")
-        from edge_detector import DEMO_KALSHI
+        print("  KALSHI_USE_DEMO_DATA enabled — using demo data")
         return [{"nominee": k, "kalshi_prob": v, "show": "", "category": ""}
                 for k, v in DEMO_KALSHI.items()]
 
