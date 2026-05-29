@@ -61,6 +61,6 @@ GITHUB_REPO      = os.environ.get("GITHUB_REPO",      "andywan-bit/awards-reposi
 GITHUB_FILE_PATH = os.environ.get("GITHUB_FILE_PATH", "opportunities.py")
 
 # ── Agent settings ───────────────────────────────────────────
-CHECK_INTERVAL_MINUTES = 60
-EDGE_ALERT_THRESHOLD   = 10
-MIN_CONFIDENCE         = "medium"
+CHECK_INTERVAL_MINUTES = int(os.environ.get("CHECK_INTERVAL_MINUTES", 60))
+EDGE_ALERT_THRESHOLD   = int(os.environ.get("EDGE_ALERT_THRESHOLD", 10))
+MIN_CONFIDENCE         = os.environ.get("MIN_CONFIDENCE", "medium")
